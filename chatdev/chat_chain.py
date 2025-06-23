@@ -11,6 +11,8 @@ from camel.configs import ChatGPTConfig
 from camel.typing import TaskType, ModelType
 from chatdev.chat_env import ChatEnv, ChatEnvConfig
 from chatdev.statistics import get_info
+import chatdev.phase as phase
+import chatdev.composed_phase as composed_phase
 from camel.web_spider import modal_trans
 from chatdev.utils import log_visualize, now
 
@@ -92,22 +94,24 @@ class ChatChain:
         # import all used phases in PhaseConfig.json from chatdev.phase
         # note that in PhaseConfig.json there only exist SimplePhases
         # ComposedPhases are defined in ChatChainConfig.json and will be imported in self.execute_step
-        self.compose_phase_module = importlib.import_module("chatdev.composed_phase")
-        self.phase_module = importlib.import_module("chatdev.phase")
+        # self.compose_phase_module = importlib.import_module("chatdev.composed_phase")
+        # self.phase_module = importlib.import_module("chatdev.phase")
+        self.compose_phase_module = composed_phase
+        self.phase_module = phase
         self.phases = dict()
-        for phase in self.config_phase:
-            assistant_role_name = self.config_phase[phase]['assistant_role_name']
-            user_role_name = self.config_phase[phase]['user_role_name']
-            phase_prompt = "\n\n".join(self.config_phase[phase]['phase_prompt'])
-            phase_class = getattr(self.phase_module, phase)
+        for _phase in self.config_phase:
+            assistant_role_name = self.config_phase[_phase]['assistant_role_name']
+            user_role_name = self.config_phase[_phase]['user_role_name']
+            phase_prompt = "\n\n".join(self.config_phase[_phase]['phase_prompt'])
+            phase_class = getattr(self.phase_module, _phase)
             phase_instance = phase_class(assistant_role_name=assistant_role_name,
                                          user_role_name=user_role_name,
                                          phase_prompt=phase_prompt,
                                          role_prompts=self.role_prompts,
-                                         phase_name=phase,
+                                         phase_name=_phase,
                                          model_type=self.model_type,
                                          log_filepath=self.log_filepath)
-            self.phases[phase] = phase_instance
+            self.phases[_phase] = phase_instance
 
     def make_recruitment(self):
         """

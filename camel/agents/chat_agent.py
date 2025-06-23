@@ -240,11 +240,23 @@ class ChatAgent(BaseAgent):
             if openai_new_api:
                 if not isinstance(response, ChatCompletion):
                     raise RuntimeError("OpenAI returned unexpected struct")
+                # print(response)
+                # print(response.choices[0])
+                # print(response.choices[0].message)
                 output_messages = [
-                    ChatMessage(role_name=self.role_name, role_type=self.role_type,
-                                meta_dict=dict(), **dict(choice.message))
+                    ChatMessage(
+                        role_name=self.role_name,
+                        role_type=self.role_type,
+                        meta_dict=dict(),
+                        **{k: v for k, v in choice.message.model_dump().items() if k in {"role", "content", "refusal", "audio", "function_call", "tool_calls"}},
+                    )
                     for choice in response.choices
                 ]
+                # output_messages = [
+                #     ChatMessage(role_name=self.role_name, role_type=self.role_type,
+                #                 meta_dict=dict(), **dict(choice.message))
+                #     for choice in response.choices
+                # ]
                 info = self.get_info(
                     response.id,
                     response.usage,
@@ -255,8 +267,12 @@ class ChatAgent(BaseAgent):
                 if not isinstance(response, dict):
                     raise RuntimeError("OpenAI returned unexpected struct")
                 output_messages = [
-                    ChatMessage(role_name=self.role_name, role_type=self.role_type,
-                                meta_dict=dict(), **dict(choice["message"]))
+                    ChatMessage(
+                        role_name=self.role_name,
+                        role_type=self.role_type,
+                        meta_dict=dict(),
+                        **{k: v for k, v in choice["message"].items() if k in {"role", "content", "refusal", "audio", "function_call", "tool_calls"}},
+                    )
                     for choice in response["choices"]
                 ]
                 info = self.get_info(

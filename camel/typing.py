@@ -12,7 +12,7 @@
 # limitations under the License.
 # =========== Copyright 2023 @ CAMEL-AI.org. All Rights Reserved. ===========
 from enum import Enum
-
+import os
 
 class TaskType(Enum):
     AI_SOCIETY = "ai_society"
@@ -52,6 +52,8 @@ class ModelType(Enum):
     GPT_4_TURBO_V = "gpt-4-turbo"
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
+    VLLM_MODEL = os.getenv("VLLM_MODEL_NAME") or os.getenv("VLLM_MODEL_PATH")
 
     STUB = "stub"
 

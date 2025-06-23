@@ -18,6 +18,7 @@ import openai
 import tiktoken
 
 from camel.typing import ModelType
+from camel.utils import get_model_token_limit, num_tokens_from_messages
 from chatdev.statistics import prompt_cost
 from chatdev.utils import log_visualize
 
@@ -65,10 +66,28 @@ class OpenAIModel(ModelBackend):
 
     def run(self, *args, **kwargs):
         string = "\n".join([message["content"] for message in kwargs["messages"]])
-        encoding = tiktoken.encoding_for_model(self.model_type.value)
-        num_prompt_tokens = len(encoding.encode(string))
+        # encoding = tiktoken.encoding_for_model(self.model_type.value)
+        # num_prompt_tokens = len(encoding.encode(string))
+        num_prompt_tokens = num_tokens_from_messages(kwargs["messages"], self.model_type)
         gap_between_send_receive = 15 * len(kwargs["messages"])
         num_prompt_tokens += gap_between_send_receive
+
+        # num_max_token_map = {
+        #     "gpt-3.5-turbo": 4096,
+        #     "gpt-3.5-turbo-16k": 16384,
+        #     "gpt-3.5-turbo-0613": 4096,
+        #     "gpt-3.5-turbo-16k-0613": 16384,
+        #     "gpt-4": 8192,
+        #     "gpt-4-0613": 8192,
+        #     "gpt-4-32k": 32768,
+        #     "gpt-4-turbo": 100000,
+        #     "gpt-4o": 4096, #100000
+        #     "gpt-4o-mini": 16384, #100000
+        #     "gemma3:27b-it-qat": 131072,
+        # }
+        num_max_token = get_model_token_limit(self.model_type)
+        num_max_completion_tokens = num_max_token - num_prompt_tokens
+        self.model_config_dict['max_completion_tokens'] = num_max_completion_tokens
 
         if openai_new_api:
             # Experimental, add base_url
@@ -81,22 +100,6 @@ class OpenAIModel(ModelBackend):
                 client = openai.OpenAI(
                     api_key=OPENAI_API_KEY
                 )
-
-            num_max_token_map = {
-                "gpt-3.5-turbo": 4096,
-                "gpt-3.5-turbo-16k": 16384,
-                "gpt-3.5-turbo-0613": 4096,
-                "gpt-3.5-turbo-16k-0613": 16384,
-                "gpt-4": 8192,
-                "gpt-4-0613": 8192,
-                "gpt-4-32k": 32768,
-                "gpt-4-turbo": 100000,
-                "gpt-4o": 4096, #100000
-                "gpt-4o-mini": 16384, #100000
-            }
-            num_max_token = num_max_token_map[self.model_type.value]
-            num_max_completion_tokens = num_max_token - num_prompt_tokens
-            self.model_config_dict['max_tokens'] = num_max_completion_tokens
 
             response = client.chat.completions.create(*args, **kwargs, model=self.model_type.value,
                                                       **self.model_config_dict)
@@ -115,22 +118,8 @@ class OpenAIModel(ModelBackend):
                 raise RuntimeError("Unexpected return from OpenAI API")
             return response
         else:
-            num_max_token_map = {
-                "gpt-3.5-turbo": 4096,
-                "gpt-3.5-turbo-16k": 16384,
-                "gpt-3.5-turbo-0613": 4096,
-                "gpt-3.5-turbo-16k-0613": 16384,
-                "gpt-4": 8192,
-                "gpt-4-0613": 8192,
-                "gpt-4-32k": 32768,
-                "gpt-4-turbo": 100000,
-                "gpt-4o": 4096, #100000
-                "gpt-4o-mini": 16384, #100000
-            }
-            num_max_token = num_max_token_map[self.model_type.value]
-            num_max_completion_tokens = num_max_token - num_prompt_tokens
-            self.model_config_dict['max_tokens'] = num_max_completion_tokens
-
+            print('Something went wrong')
+            exit(1)
             response = openai.ChatCompletion.create(*args, **kwargs, model=self.model_type.value,
                                                     **self.model_config_dict)
 
@@ -188,6 +177,8 @@ class ModelFactory:
             ModelType.GPT_4_TURBO_V,
             ModelType.GPT_4O,
             ModelType.GPT_4O_MINI,
+            ModelType.OLLAMA_MODEL,
+            ModelType.VLLM_MODEL,
             None
         }:
             model_class = OpenAIModel

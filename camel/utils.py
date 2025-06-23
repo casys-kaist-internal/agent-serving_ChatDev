@@ -19,6 +19,7 @@ from typing import Any, Callable, List, Optional, Set, TypeVar
 
 import requests
 import tiktoken
+import sentencepiece
 
 from camel.messages import OpenAIMessage
 from camel.typing import ModelType, TaskType
@@ -91,7 +92,9 @@ def num_tokens_from_messages(
         ModelType.GPT_4_TURBO_V,
         ModelType.GPT_4O,
         ModelType.GPT_4O_MINI,
-        ModelType.STUB
+        ModelType.STUB,
+        ModelType.OLLAMA_MODEL,
+        ModelType.VLLM_MODEL,
     }:
         return count_tokens_openai_chat_models(messages, encoding)
     else:
@@ -130,6 +133,14 @@ def get_model_token_limit(model: ModelType) -> int:
         return 128000
     elif model == ModelType.GPT_4O_MINI:
         return 128000
+    elif model == ModelType.OLLAMA_MODEL:
+        OLLAMA_CONTEXT_LENGTH = os.getenv("OLLAMA_CONTEXT_LENGTH")
+        assert OLLAMA_CONTEXT_LENGTH is not None, "OLLAMA_CONTEXT_LENGTH is not set"
+        return int(OLLAMA_CONTEXT_LENGTH)
+    elif model == ModelType.VLLM_MODEL:
+        VLLM_CONTEXT_LENGTH = os.getenv("VLLM_CONTEXT_LENGTH")
+        assert VLLM_CONTEXT_LENGTH is not None, "VLLM_CONTEXT_LENGTH is not set"
+        return int(VLLM_CONTEXT_LENGTH)
     else:
         raise ValueError("Unknown model type")
 

@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 import openai
 import tiktoken
+import yaml
 
 from camel.typing import ModelType
 from camel.utils import get_model_token_limit, num_tokens_from_messages
@@ -64,6 +65,14 @@ class OpenAIModel(ModelBackend):
         self.model_type = model_type
         self.model_config_dict = model_config_dict
 
+        model_config_path = os.getenv('VLLM_MODEL_CONFIG_PATH')
+        assert model_config_path is not None, "VLLM_MODEL_CONFIG_PATH environment variable is not set"
+
+        model_config = yaml.safe_load(open(model_config_path, 'r'))
+        # overwrite model_config['sampling_params'] with model_config_dict
+        if sampling_params := model_config.get('sampling_params'):
+            self.model_config_dict.update(sampling_params)
+
     def run(self, *args, **kwargs):
         string = "\n".join([message["content"] for message in kwargs["messages"]])
         # encoding = tiktoken.encoding_for_model(self.model_type.value)
@@ -86,56 +95,42 @@ class OpenAIModel(ModelBackend):
         #     "gemma3:27b-it-qat": 131072,
         # }
         num_max_token = get_model_token_limit(self.model_type)
-        num_max_completion_tokens = num_max_token - num_prompt_tokens
+        num_max_completion_tokens = num_max_token - num_prompt_tokens - 1000  # reserve 1000 tokens for safety
         self.model_config_dict['max_completion_tokens'] = num_max_completion_tokens
 
-        if openai_new_api:
-            # Experimental, add base_url
-            if BASE_URL:
-                client = openai.OpenAI(
-                    api_key=OPENAI_API_KEY,
-                    base_url=BASE_URL,
-                )
-            else:
-                client = openai.OpenAI(
-                    api_key=OPENAI_API_KEY
-                )
+        log_visualize(
+            "**[OpenAI_Usage_Info Send]**\nmodel: {}\napi_key: {}\nbase_url: {}\n".format(
+            self.model_type.value, OPENAI_API_KEY, BASE_URL)
+        )
+        assert openai_new_api, "Old OpenAI API version is not supported. Please update to the new version."
 
-            response = client.chat.completions.create(*args, **kwargs, model=self.model_type.value,
-                                                      **self.model_config_dict)
-
-            cost = prompt_cost(
-                self.model_type.value,
-                num_prompt_tokens=response.usage.prompt_tokens,
-                num_completion_tokens=response.usage.completion_tokens
+        # Experimental, add base_url
+        if BASE_URL:
+            client = openai.OpenAI(
+                api_key=OPENAI_API_KEY,
+                base_url=BASE_URL,
+            )
+        else:
+            client = openai.OpenAI(
+                api_key=OPENAI_API_KEY
             )
 
-            log_visualize(
-                "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
-                    response.usage.prompt_tokens, response.usage.completion_tokens,
-                    response.usage.total_tokens, cost))
-            if not isinstance(response, ChatCompletion):
-                raise RuntimeError("Unexpected return from OpenAI API")
-            return response
-        else:
-            print('Something went wrong')
-            exit(1)
-            response = openai.ChatCompletion.create(*args, **kwargs, model=self.model_type.value,
+        response = client.chat.completions.create(*args, **kwargs, model=self.model_type.value,
                                                     **self.model_config_dict)
 
-            cost = prompt_cost(
-                self.model_type.value,
-                num_prompt_tokens=response["usage"]["prompt_tokens"],
-                num_completion_tokens=response["usage"]["completion_tokens"]
-            )
+        cost = prompt_cost(
+            self.model_type.value,
+            num_prompt_tokens=response.usage.prompt_tokens,
+            num_completion_tokens=response.usage.completion_tokens
+        )
 
-            log_visualize(
-                "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
-                    response["usage"]["prompt_tokens"], response["usage"]["completion_tokens"],
-                    response["usage"]["total_tokens"], cost))
-            if not isinstance(response, Dict):
-                raise RuntimeError("Unexpected return from OpenAI API")
-            return response
+        log_visualize(
+            "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
+                response.usage.prompt_tokens, response.usage.completion_tokens,
+                response.usage.total_tokens, cost))
+        if not isinstance(response, ChatCompletion):
+            raise RuntimeError("Unexpected return from OpenAI API")
+        return response
 
 
 class StubModel(ModelBackend):

@@ -15,8 +15,11 @@ import argparse
 import logging
 import os
 import sys
+import yaml
+from pathlib import Path
 
 from camel.typing import ModelType
+from chatdev.utils import convert_model_name
 
 root = os.path.dirname(__file__)
 sys.path.append(root)
@@ -80,6 +83,8 @@ parser.add_argument('--name', type=str, default="Gomoku",
                     help="Name of software, your software will be generated in WareHouse/name_org_timestamp")
 parser.add_argument('--model', type=str, default="VLLM_MODEL",
                     choices=['VLLM_MODEL', 'OLLAMA_MODEL'])
+parser.add_argument('--enable-reasoning', action='store_true',
+                    help="Enable reasoning mode, which will use the reasoning phase to generate code")
 parser.add_argument('--path', type=str, default="",
                     help="Your file directory, ChatDev will build upon your software in the Incremental mode")
 args = parser.parse_args()
@@ -105,6 +110,26 @@ if openai_new_api:
 
 model_type = os.getenv("VLLM_MODEL_NAME") or os.getenv("VLLM_MODEL_PATH")
 assert model_type is not None, "Please set the OLLAMA_MODEL environment variable to the model you want to use."
+
+WORK_DIR = os.getenv('WORK_DIR')
+assert WORK_DIR is not None, "WORK_DIR environment variable not set"
+model_config_path = Path(WORK_DIR) / 'config/vllm_models/' / f"{convert_model_name(model_type, args.enable_reasoning)}.yaml"
+assert model_config_path.exists(), f"Model config file {model_config_path} does not exist."
+
+# model_config = yaml.safe_load(model_config_path.read_text())
+# sampling_param_keys = ['temperature', 'top_p', 'top_k', 'min_p']
+# # check if the model_config contains sampling parameters
+# for key in sampling_param_keys:
+#     assert key in model_config, f"Model config {model_config_path} does not contain required key: {key}"
+
+os.environ["VLLM_MODEL_CONFIG_PATH"] = model_config_path.as_posix()
+
+
+# Set os environment variable of model_config
+# os.environ["temperature"] = str(model_config.get("temperature"))
+# os.environ["top_p"] = str(model_config.get("top_p"))
+# os.environ["top_k"] = str(model_config.get("top_k"))
+# os.environ["min_p"] = str(model_config.get("min_p"))
 
 chat_chain = ChatChain(config_path=config_path,
                        config_phase_path=config_phase_path,

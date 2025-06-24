@@ -108,7 +108,7 @@ class ChatAgent(BaseAgent):
             self.memory = memory.memory_data.get("All")
         else:
             self.memory = None
-
+        
     def reset(self) -> List[MessageType]:
         r"""Resets the :obj:`ChatAgent` to its initial state and returns the
         stored messages.

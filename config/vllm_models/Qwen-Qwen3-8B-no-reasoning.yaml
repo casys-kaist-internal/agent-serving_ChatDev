@@ -1,0 +1,17 @@
+name: Qwen/Qwen3-8B 
+
+api_base: http://0.0.0.0:9869/v1
+api_version: v1
+api_key: token-abc123
+
+per_instance_cost_limit: 0
+total_cost_limit: 0
+
+sampling_params:
+  temperature: 0.7
+  top_p: 0.8
+  extra_body:
+    top_k: 20
+    min_p: 0
+    chat_template_kwargs:
+      enable_thinking: false

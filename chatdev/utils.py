@@ -9,6 +9,26 @@ from camel.messages.system_messages import SystemMessage
 from visualizer.app import send_msg
 
 
+def convert_model_name(model_name: str, enable_reasoning: bool = False) -> str:
+    """
+    Convert the model name to a more readable format.
+    Args:
+        model_name: the name of the model
+
+    Returns: the converted model name
+
+    """
+
+    # switch / to -
+    model_name = model_name.replace("/", "-")
+    if enable_reasoning:
+        model_name = f'{model_name}-reasoning'
+    else:
+        model_name = f'{model_name}-no-reasoning'
+
+    return model_name
+
+
 def now():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
 

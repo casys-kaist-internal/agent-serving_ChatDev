@@ -84,6 +84,10 @@ if __name__ == '__main__':
     input_path = args.input_path
     output_path = args.output_path
 
+    if os.path.exists(output_path):
+        print(f"Output file {output_path} already exists. Skipping parsing.")
+        exit(0)
+
     usage_data = parse_log_file(input_path)
 
     if os.path.exists(output_path):

@@ -19,5 +19,5 @@ find $WORK_DIR/WareHouse -mindepth 2 -type f -name "*.log" | while read -r log_f
     
     # Execute the Python script with input and output paths
     uv run python $SCRIPT_DIR/parse_usage_info.py "$log_file" "$output_file"
-    uv run python $SCRIPT_DIR/draw_usage_info.py --csv_file "$output_file"
+    uv run python $SCRIPT_DIR/plot_usage_info.py --csv_file "$output_file"
 done

@@ -29,6 +29,13 @@ def run_SRDD_task(SRDD_data, enable_reasoning=False):
     name = SRDD_data['Name']
     description = SRDD_data['Description']
     category = SRDD_data['Category']
+    # Skip if the directory already exists
+    # match the regex pattern for the directory name
+    warehouse_dir = Path(WORK_DIR) / 'WareHouse'
+    if warehouse_dir.match(f"{name}_SRDD_{category}*"):
+        print(f"Directory {name}_SRDD_{category} already exists, skipping.")
+        return
+    exit(1)
     cmd = f"cd {WORK_DIR} && uv run python run.py --name '{name}' --task '{description}' --org 'SRDD_{category}'"
     if enable_reasoning:
         cmd += " --enable-reasoning"

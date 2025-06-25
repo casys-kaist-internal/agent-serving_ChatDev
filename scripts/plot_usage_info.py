@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import argparse
 import sys
 import io # Used to read string as file-like object
+import os
 
 prefill_tokens_per_second = 1500
 
@@ -151,6 +152,11 @@ Example usage:
 
     csv_file = args.csv_file
     out_file_path = csv_file.replace('.csv', '.pdf')
+
+    # if outfile exists, pass
+    if os.path.exists(out_file_path):
+        print(f"Output file '{out_file_path}' already exists. Skipping plotting.")
+        return
 
     # Call the plotting function with the provided file path
     plot_token_growth(csv_file, out_file_path=out_file_path)

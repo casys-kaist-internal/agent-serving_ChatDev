@@ -69,4 +69,4 @@ if __name__ == "__main__":
     sampled_SRDD = sample_SRDD(num_samples=num_samples, seed=seed)
 
     with ThreadPoolExecutor(max_workers=max_concurrent_processes) as executor:
-        executor.map(lambda SRDD: run_SRDD_task(SRDD, enable_reasoning), sampled_SRDD[:1])
+        executor.map(lambda SRDD: run_SRDD_task(SRDD, enable_reasoning), sampled_SRDD)

@@ -41,8 +41,9 @@ def plot_token_growth(file_path: str, out_file_path: str):
     # Convert time columns to datetime objects for proper time-series plotting.
     # 'errors=coerce' will turn unparseable dates into NaT (Not a Time),
     # preventing errors and allowing us to drop invalid rows.
-    df['send_time'] = pd.to_datetime(df['send_time'], errors='coerce')
-    df['recv_time'] = pd.to_datetime(df['recv_time'], errors='coerce')
+    # the date format is assumed to be 'YYYY-DD-MM HH:MM:SS'
+    df['send_time'] = pd.to_datetime(df['send_time'], errors='coerce', format='%Y-%d-%m %H:%M:%S')
+    df['recv_time'] = pd.to_datetime(df['recv_time'], errors='coerce', format='%Y-%d-%m %H:%M:%S')
 
     # Find the minimum timestamp among all send_time and recv_time
     min_time = min(df['send_time'].min(), df['recv_time'].min())
@@ -155,8 +156,8 @@ Example usage:
 
     # if outfile exists, pass
     if os.path.exists(out_file_path):
-        print(f"Output file '{out_file_path}' already exists. Skipping plotting.")
-        return
+        print(f"Output file '{out_file_path}' already exists. Removing file.")
+        os.remove(out_file_path)
 
     # Call the plotting function with the provided file path
     plot_token_growth(csv_file, out_file_path=out_file_path)

@@ -1,0 +1,14 @@
+name: Qwen/Qwen3-32B 
+
+api_base: http://0.0.0.0:9869/v1
+api_version: v1
+api_key: token-abc123
+
+sampling_params:
+  temperature: 0.6
+  top_p: 0.95
+  extra_body:
+    top_k: 20
+    min_p: 0
+    chat_template_kwargs:
+      enable_thinking: true
